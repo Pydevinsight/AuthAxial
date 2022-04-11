@@ -2,10 +2,14 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+import configparser
 
 
 def main():
     """Run administrative tasks."""
+    config_p = configparser.ConfigParser()
+    config_p.read("env.config.ini")
+
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'AuthAxial.development')
     try:
         from django.core.management import execute_from_command_line

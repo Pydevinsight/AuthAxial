@@ -11,9 +11,36 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import locale
 from pathlib import Path
-from decouple import config, Csv
+import configparser
 
-config.encoding = locale.getpreferredencoding(True)
+import logging
+from logging.handlers import RotatingFileHandler
+
+
+logger = logging.getLogger(__name__)
+from configparser import ConfigParser, ExtendedInterpolation, BasicInterpolation
+config = ConfigParser(
+    interpolation=ExtendedInterpolation(), strict=True, allow_no_value=False, comment_prefixes=("#", ";"),
+    inline_comment_prefixes=(";", ), empty_lines_in_values=True
+)
+# print("&"*45)
+# config_p.read('config.ini')
+#
+# print("Hey config sections", config_p.sections(),)
+# print("*"*45)
+#
+# print("python_dir=", config_p.get("Arthur", "python_dir"))
+# print("&"*45)
+# print("my_pictures=", config_p.get("Arthur", "my_pictures"))
+# print("hey", config_p.get("Arthur", "my_dir"))
+# print(config_p.has_section("Arthur"))
+# config_p.add_section("maka")
+# config_p.set("maka", "rosneft", "russia")
+
+# from decouple import config, Csv
+
+
+# config.encoding = locale.getpreferredencoding(True)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,12 +50,65 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config("SECRET_KEY")
+SECRET_KEY = config.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
+ALLOWED_HOSTS = config.get('ALLOWED_HOSTS')
+
+LOGGING = {
+    'version': 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        'verbose': {
+            'format': '{levelname} {astime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {astime} {message}',
+            "style": '{',
+        }
+    },
+    'filters': {
+        'special': {
+            '()': 'project.logging.SpecialFilter',
+            'foo': 'bar',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.debug.RequireDebugTrue'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': '',
+            'filters': [],
+            'class': '',
+            'formatter': 'simple'
+        },
+        'mail_admins': {
+            'level': '',
+            'filters': [],
+            'class': ''
+        }
+    },
+    'loggers': {
+        "django": {
+            'handlers': ['console'],
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': False
+        },
+        'myproject.custom': {
+            'handlers': ['console', 'mail_admins'],
+            'level': 'INFO',
+            'filters': ['special']
+        }
+    }
+}
 
 # Application definition
 
@@ -80,9 +160,16 @@ WSGI_APPLICATION = 'AuthAxial.wsgi.application'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django_tenants.postgresql_backend",
+        "NAME": config.get("DB_NAME"),
+        "USER": config.get("USERNAME"),
+        "PASSWORD": config.get("PASSWORD"),
+        "HOST": config.get("HOSTNAME"),
+        "PORT": config.get("PORT"),
+        "ATOMIC_REQUESTS": True,
+        "AUTOCOMMIT": True,
+        "CONN_MAX_AGE": 120,
     }
 }
 
@@ -132,4 +219,13 @@ MEDIA_URL = 'media/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = 'accounts/login/'
+LOGIN_REDIRECT_URL = 'accounts/dashboard/'
+
+
+# Admin login
+# ADMIN_LOGIN = config("ADMIN_L0GIN")
+# ADMIN_PASSWORD = config("ADMIN_PASSWORD")
